@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+
+    tools:context=".ConnectionActivity"
+    android:layout_margin="10dp">
+
+    <Switch
+        android:id="@+id/cmdBluetooth"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:switchMinWidth="56dp"
+        android:layout_marginBottom="10dp"
+        android:checked="false"
+        android:text="Bluetooth"
+        android:textAlignment="viewStart"
+        android:textOff="OFF"
+        android:textOn="ON"/>
+
+
+    <TextView
+        android:id="@+id/lblDevice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/cmdBluetooth"
+        android:text="Dispositivo:" />
+
+    <Spinner
+        android:id="@+id/cmdSelectDevice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/cmdBluetooth"
+        android:layout_toRightOf="@id/lblDevice"
+        android:spinnerMode="dialog" />
+
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/cmdAddDevice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:src="@drawable/ic_action_add"
+        android:layout_margin="16dp" />
+
+</RelativeLayout >

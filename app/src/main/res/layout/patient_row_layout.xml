@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="?attr/listPreferredItemHeight"
+    android:orientation="vertical"
+    android:paddingBottom="8dp"
+    android:paddingTop="8dp">
+
+    <ImageView
+        android:id="@+id/patient_img"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_centerVertical="true"
+        android:src="@drawable/ic_patient_avatar"
+        />
+
+    <TextView
+        android:id="@+id/txtPatientTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="56dp"
+        android:text="Nombre"
+        android:textAppearance="?attr/textAppearanceListItem"
+        tools:text="Paciente 1" />
+
+    <TextView
+        android:id="@+id/txtPatientDescription1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/txtPatientTitle"
+        android:layout_below="@+id/txtPatientTitle"
+        android:text="Descripcion 1"
+        tools:text="Descripcion 1" />
+
+    <TextView
+        android:id="@+id/txtPatientDescription2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/txtPatientTitle"
+        android:layout_below="@+id/txtPatientDescription1"
+        android:text="Descripcion 2"
+        tools:text="Descripcion 2" />
+</RelativeLayout>

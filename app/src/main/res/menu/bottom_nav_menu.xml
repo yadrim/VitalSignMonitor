@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/patient_nav_general"
+        android:icon="@drawable/ic_patient_general"
+        android:title="General" />
+
+    <item
+        android:id="@+id/patient_nav_reminders"
+        android:icon="@drawable/ic_patient_reminders"
+        android:title="Recordatorios" />
+
+    <item
+        android:id="@+id/patient_nav_history"
+        android:icon="@drawable/ic_patient_history"
+        android:title="Historial" />
+
+</menu>
