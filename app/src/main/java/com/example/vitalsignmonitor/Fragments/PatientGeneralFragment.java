@@ -40,9 +40,14 @@ public class PatientGeneralFragment extends Fragment
     private TextInputEditText txtPatientLastName;
 
     Calendar myCalendar = Calendar.getInstance();
+    IPatientListener mPatientListener;
 
     public PatientGeneralFragment() {
         // Required empty public constructor
+    }
+
+    public void SetPatientListener(IPatientListener listener){
+        mPatientListener = listener;
     }
 
     @Override
@@ -152,6 +157,9 @@ public class PatientGeneralFragment extends Fragment
         getPatientInformation();
         PatientRepository.savePatient(patient);
 
+        if(mPatientListener != null)
+            mPatientListener.onPatientChanged(patient);
+
         Toast toast = Toast.makeText(getContext(), "Paciente guardado!", Toast.LENGTH_SHORT);
         toast.show();
     }
@@ -212,9 +220,4 @@ public class PatientGeneralFragment extends Fragment
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
-}
-
-interface IPatientHandler{
-    void setPatient(Patient patient);
-    void refresh();
 }

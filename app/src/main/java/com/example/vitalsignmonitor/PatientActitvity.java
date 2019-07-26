@@ -39,9 +39,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayDeque;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 
 import app.akexorcist.bluetotohspp.library.BluetoothSPP;
@@ -56,6 +58,8 @@ public class PatientActitvity extends AppCompatActivity
     public final static int SYNC_PATIENT = 0;
     public final static int GET_PATIENT_DATA = 1;
 
+    public final static int TRANSFER_SIZE = 12;
+
     final PatientGeneralFragment generalFragment = new PatientGeneralFragment();
     final PatientReminderFragment reminderFragment = new PatientReminderFragment();
     final PatientHistoryFragment historyFragment = new PatientHistoryFragment();
@@ -69,6 +73,9 @@ public class PatientActitvity extends AppCompatActivity
 
     private StringBuilder dataRaw = new StringBuilder();
     private int currentOperation;
+
+    private Queue<String> transferBuffer;
+    final Handler timeoutHandler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,6 +101,10 @@ public class PatientActitvity extends AppCompatActivity
 
         generalFragment.setPatient(patient);
         historyFragment.setPatient(patient);
+
+        generalFragment.SetPatientListener(patient -> {
+            this.patient = patient;
+        });
 
         currentContent = generalFragment;
 
@@ -126,16 +137,25 @@ public class PatientActitvity extends AppCompatActivity
         });
 
         bluetooth.setBluetoothStateListener(state -> {
-            switch(state){
-                case BluetoothState.STATE_CONNECTED:
-                    Log.println(Log.DEBUG, "bluetooth", "Conectado");
-                    Toast.makeText(this, "Connected with " + bluetooth.getConnectedDeviceName(), Toast.LENGTH_LONG);
-                    break;
 
-                case BluetoothState.STATE_NONE:
-                    Log.println(Log.DEBUG, "bluetooth", "Fallo COnexion");
-                    Toast.makeText(this, "Connection Failed", Toast.LENGTH_LONG);
-                    break;
+            if(state == BluetoothState.STATE_CONNECTED){
+                Log.println(Log.DEBUG, "bluetooth", "Conectado");
+                Toast.makeText(this, "Connected with " + bluetooth.getConnectedDeviceName(), Toast.LENGTH_LONG);
+            }
+
+            if(state == BluetoothState.STATE_NONE){
+                Log.println(Log.DEBUG, "bluetooth", "Fallo Conexion");
+                Toast.makeText(this, "Connection Failed", Toast.LENGTH_LONG);
+            }
+
+            if(state == BluetoothState.MESSAGE_WRITE){
+                if(transferBuffer != null)
+                {
+                    if(transferBuffer.size() > 0)
+                        performSendData();
+                    else if(progressDialog != null)
+                        progressDialog.dismiss();
+                }
             }
         });
 
@@ -309,6 +329,8 @@ public class PatientActitvity extends AppCompatActivity
         else
             message = "Error al obtener datos de paciente desde dispositivo";
 
+        this.historyFragment.refresh();
+
         Toast.makeText(this, message, Toast.LENGTH_LONG);
     }
 
@@ -334,10 +356,47 @@ public class PatientActitvity extends AppCompatActivity
             progressDialog.show();
 
             currentOperation = SYNC_PATIENT;
-            bluetooth.send(request.toString(),true);
 
+            beginSendData(request.toString());
         }catch(Exception e){
             Toast.makeText(this, "Problem to sync patient. Error: " + e.getMessage(), Toast.LENGTH_LONG);
+        }
+    }
+
+    private void beginSendData(String data){
+        transferBuffer = new ArrayDeque<String>();
+
+        for(int i= 0; i <data.length(); i += TRANSFER_SIZE)
+            transferBuffer.offer(data.substring(i, Math.min(data.length(), i + TRANSFER_SIZE)));
+
+        performSendData();
+
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                if(progressDialog != null){
+                    progressDialog.dismiss();
+                    progressDialog = null;
+                    transferBuffer.clear();
+                    transferBuffer = null;
+                }
+            }
+        };
+
+        timeoutHandler.postDelayed(runnable, 3600);
+    }
+
+    private void performSendData(){
+        String data;
+        Boolean endTransmission;
+
+        try{
+            data = transferBuffer.poll();
+            endTransmission = transferBuffer.size() == 0;
+
+            bluetooth.send(data, endTransmission);
+        } catch (Exception e){
+            Toast.makeText(this, "Problem to get patient data. Error: " + e.getMessage(), Toast.LENGTH_LONG);
         }
     }
 
@@ -358,7 +417,7 @@ public class PatientActitvity extends AppCompatActivity
             progressDialog.show();
 
             currentOperation= GET_PATIENT_DATA;
-            bluetooth.send(request.toString(), true);
+            beginSendData(request.toString());
 
         }catch(Exception e){
             Toast.makeText(this, "Problem to get patient data. Error: " + e.getMessage(), Toast.LENGTH_LONG);
