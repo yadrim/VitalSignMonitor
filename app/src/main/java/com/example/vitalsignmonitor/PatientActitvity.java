@@ -15,6 +15,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -127,10 +128,12 @@ public class PatientActitvity extends AppCompatActivity
         bluetooth.setBluetoothStateListener(state -> {
             switch(state){
                 case BluetoothState.STATE_CONNECTED:
+                    Log.println(Log.DEBUG, "bluetooth", "Conectado");
                     Toast.makeText(this, "Connected with " + bluetooth.getConnectedDeviceName(), Toast.LENGTH_LONG);
                     break;
 
                 case BluetoothState.STATE_NONE:
+                    Log.println(Log.DEBUG, "bluetooth", "Fallo COnexion");
                     Toast.makeText(this, "Connection Failed", Toast.LENGTH_LONG);
                     break;
             }
@@ -314,7 +317,6 @@ public class PatientActitvity extends AppCompatActivity
         JSONObject data = new JSONObject();
 
         try{
-            configureBluetoothConnection();
 
             request.put("operation","savePatient");
 
@@ -332,7 +334,7 @@ public class PatientActitvity extends AppCompatActivity
             progressDialog.show();
 
             currentOperation = SYNC_PATIENT;
-            //bluetoothServer.write(request.toString() + "|");
+            bluetooth.send(request.toString(),true);
 
         }catch(Exception e){
             Toast.makeText(this, "Problem to sync patient. Error: " + e.getMessage(), Toast.LENGTH_LONG);
@@ -373,9 +375,13 @@ public class PatientActitvity extends AppCompatActivity
                 return;
             }
 
+            Toast.makeText(this, "Tratando de conectar con " + device.name, Toast.LENGTH_LONG);
+
+            bluetooth.setupService();
             bluetooth.startService(BluetoothState.DEVICE_OTHER);
             bluetooth.connect(device.identifier);
         }catch(Exception e){
+            Log.println(Log.DEBUG, "bluetooth", e.getMessage());
             Toast.makeText(this, "Problem to connect with device", Toast.LENGTH_LONG);
         }
     }
