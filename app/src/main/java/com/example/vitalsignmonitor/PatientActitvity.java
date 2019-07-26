@@ -43,6 +43,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import app.akexorcist.bluetotohspp.library.BluetoothSPP;
+import app.akexorcist.bluetotohspp.library.BluetoothState;
+
 public class PatientActitvity extends AppCompatActivity
         implements PatientGeneralFragment.OnFragmentInteractionListener,
                     PatientReminderFragment.OnFragmentInteractionListener,
@@ -59,19 +62,12 @@ public class PatientActitvity extends AppCompatActivity
 
     Fragment currentContent;
     Patient patient;
+    BluetoothSPP bluetooth;
 
-    static Handler bluetoothIn;
-    final int handlerState = 0;
-    private ConnectedThread bluetoothServer;
     private ProgressDialog progressDialog;
 
-    private BluetoothDevice bluetoothDevice = null;
-    private BluetoothAdapter bluetoothAdapter = null;
-    private BluetoothSocket bluetoothSocket = null;
     private StringBuilder dataRaw = new StringBuilder();
     private int currentOperation;
-
-    private static final UUID BTMODULEUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,8 +100,43 @@ public class PatientActitvity extends AppCompatActivity
         fragmentManager.beginTransaction().add(R.id.main_container, reminderFragment, "2").hide(reminderFragment).commit();
         fragmentManager.beginTransaction().add(R.id.main_container, generalFragment, "1").commit();
 
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        setupHandlerData();
+        setupBluetoothHandler();
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+        bluetooth.stopService();
+    }
+
+    private void setupBluetoothHandler(){
+        bluetooth = new BluetoothSPP(this);
+
+        bluetooth.setOnDataReceivedListener((data, message) -> {
+            if(dataRaw == null)
+                dataRaw = new StringBuilder();
+
+            dataRaw.append(message);
+
+            if(dataRaw.length() == 0)
+                return;
+
+            if(dataRaw.charAt(dataRaw.length() -1) == '|' || dataRaw.charAt(dataRaw.length() -1) == '\0' || dataRaw.charAt(dataRaw.length() -1) == '\n')
+                ProcessMessage();
+        });
+
+        bluetooth.setBluetoothStateListener(state -> {
+            switch(state){
+                case BluetoothState.STATE_CONNECTED:
+                    Toast.makeText(this, "Connected with " + bluetooth.getConnectedDeviceName(), Toast.LENGTH_LONG);
+                    break;
+
+                case BluetoothState.STATE_NONE:
+                    Toast.makeText(this, "Connection Failed", Toast.LENGTH_LONG);
+                    break;
+            }
+        });
+
+        configureBluetoothConnection();
     }
 
     @Override
@@ -164,29 +195,6 @@ public class PatientActitvity extends AppCompatActivity
 
     }
 
-    @SuppressLint("HandlerLeak")
-    private void setupHandlerData() {
-        bluetoothIn = new Handler(){
-            @Override
-            public void handleMessage(Message msg) {
-                if(msg.what == handlerState){
-                    try{
-                        String readMessage = (String) msg.obj;
-                        dataRaw.append(readMessage);
-                        int endOfLineIndex = dataRaw.indexOf("|");
-                        if (endOfLineIndex > 0) {
-                            dataRaw.deleteCharAt(dataRaw.length() - 1);
-                            ProcessMessage();
-                        }
-                    }catch(Exception e){
-                        dataRaw = new StringBuilder();
-                        Toast.makeText(getApplicationContext(), "Problem to process incoming message. Error: " + e.getMessage(), Toast.LENGTH_LONG);
-                    }
-                }
-            }
-        };
-    }
-
     private void ProcessMessage(){
         this.progressDialog.dismiss();
 
@@ -203,7 +211,7 @@ public class PatientActitvity extends AppCompatActivity
         }catch (Exception e){
         }
 
-        dataRaw = new StringBuilder();
+        dataRaw = null;
     }
 
     private void ProcessSyncPatientResponse(){
@@ -222,7 +230,7 @@ public class PatientActitvity extends AppCompatActivity
         else
             message = "Error al sincronizar paciente";
 
-        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG);
+        Toast.makeText(this, message, Toast.LENGTH_LONG);
     }
 
     private void ProcessGetPatientDataResponse(){
@@ -298,7 +306,7 @@ public class PatientActitvity extends AppCompatActivity
         else
             message = "Error al obtener datos de paciente desde dispositivo";
 
-        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG);
+        Toast.makeText(this, message, Toast.LENGTH_LONG);
     }
 
     private void syncPatient() {
@@ -307,10 +315,6 @@ public class PatientActitvity extends AppCompatActivity
 
         try{
             configureBluetoothConnection();
-
-            if(bluetoothServer == null){
-                return;
-            }
 
             request.put("operation","savePatient");
 
@@ -328,10 +332,10 @@ public class PatientActitvity extends AppCompatActivity
             progressDialog.show();
 
             currentOperation = SYNC_PATIENT;
-            bluetoothServer.write(request.toString() + "|");
+            //bluetoothServer.write(request.toString() + "|");
 
         }catch(Exception e){
-            Toast.makeText(getApplicationContext(), "Problem to sync patient. Error: " + e.getMessage(), Toast.LENGTH_LONG);
+            Toast.makeText(this, "Problem to sync patient. Error: " + e.getMessage(), Toast.LENGTH_LONG);
         }
     }
 
@@ -340,11 +344,6 @@ public class PatientActitvity extends AppCompatActivity
         JSONObject data = new JSONObject();
 
         try{
-            configureBluetoothConnection();
-
-            if(bluetoothServer == null)
-                return;
-
             request.put("operation","getPatientData");
 
             data.put("patient" , patient.number);
@@ -357,43 +356,28 @@ public class PatientActitvity extends AppCompatActivity
             progressDialog.show();
 
             currentOperation= GET_PATIENT_DATA;
-            bluetoothServer.write(request.toString() + "|");
+            bluetooth.send(request.toString(), true);
 
         }catch(Exception e){
-            Toast.makeText(getApplicationContext(), "Problem to get patient data. Error: " + e.getMessage(), Toast.LENGTH_LONG);
+            Toast.makeText(this, "Problem to get patient data. Error: " + e.getMessage(), Toast.LENGTH_LONG);
         }
     }
 
     private void configureBluetoothConnection() {
-        if(bluetoothSocket != null)
-            return;
-
         Device device;
 
         try{
             device = DeviceRepository.getCurrentDevice();
             if(device == null){
-                Toast.makeText(getApplicationContext(), "No device configured", Toast.LENGTH_LONG);
+                Toast.makeText(this, "No device configured", Toast.LENGTH_LONG);
                 return;
             }
 
-            bluetoothDevice = bluetoothAdapter.getRemoteDevice(device.identifier);
-            if(device == null){
-                Toast.makeText(getApplicationContext(), "Device has no longer paired", Toast.LENGTH_LONG);
-                return;
-            }
-
-            bluetoothSocket = createBluetoothSocket(bluetoothDevice);
-            bluetoothServer = new ConnectedThread(bluetoothSocket);
+            bluetooth.startService(BluetoothState.DEVICE_OTHER);
+            bluetooth.connect(device.identifier);
         }catch(Exception e){
-            Toast.makeText(getApplicationContext(), "Problem to connect with device", Toast.LENGTH_LONG);
+            Toast.makeText(this, "Problem to connect with device", Toast.LENGTH_LONG);
         }
-    }
-
-    private BluetoothSocket createBluetoothSocket(BluetoothDevice device) throws IOException {
-
-        return  device.createRfcommSocketToServiceRecord(BTMODULEUUID);
-        //creates secure outgoing connecetion with BT device using UUID
     }
 
     private Calendar convertToCalendar(String date, String format){
@@ -424,58 +408,4 @@ public class PatientActitvity extends AppCompatActivity
 
         return result;
     }
-
-    //create new class for connect thread
-    public class ConnectedThread extends Thread {
-
-        private final InputStream mmInStream;
-        private final OutputStream mmOutStream;
-
-        //creation of the connect thread
-        public ConnectedThread(BluetoothSocket socket) {
-            InputStream tmpIn = null;
-            OutputStream tmpOut = null;
-
-            try {
-                //Create I/O streams for connection
-                tmpIn = socket.getInputStream();
-                tmpOut = socket.getOutputStream();
-            } catch (IOException e) { }
-
-            mmInStream = tmpIn;
-            mmOutStream = tmpOut;
-        }
-
-        public void run() {
-            byte[] buffer = new byte[256];
-            int bytes;
-
-            // Keep looping to listen for received messages
-            while (true) {
-                try {
-                    bytes = mmInStream.read(buffer);            //read bytes from input buffer
-                    String readMessage = new String(buffer, 0, bytes);
-                    // Send the obtained bytes to the UI Activity via handler
-                    bluetoothIn.obtainMessage(handlerState, bytes, -1, readMessage).sendToTarget();
-                } catch (IOException e) {
-                    progressDialog.dismiss();
-                    break;
-                }
-            }
-        }
-        //write method
-        public void write(String input) {
-            //converts entered String into bytes
-            byte[] msgBuffer = input.getBytes();
-
-            try {
-                //write bytes over BT connection via outstream
-                mmOutStream.write(msgBuffer);
-            } catch (IOException e) {
-                progressDialog.dismiss();
-                Toast.makeText(getBaseContext(), "Connection Failure", Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
 }
