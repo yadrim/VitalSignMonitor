@@ -1,13 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item
-        android:id="@+id/menu_sync_patient"
-        android:title="Sincronizar Paciente">
-    </item>
-    <item
-        android:id="@+id/menu_getdata_patient"
-        android:title="Obtener Registros">
-    </item>
+
+    <group android:id="@+id/menu_connection">
+        <item
+            android:id="@+id/menu_sync_patient"
+            android:title="Sincronizar Paciente">
+        </item>
+        <item
+            android:id="@+id/menu_getdata_patient"
+            android:title="Obtener Registros">
+        </item>
+    </group>
+
+    <group android:id="@+id/menu_actions">
+        <item
+            android:id="@+id/menu_add_patient_data"
+            android:title="Registrar Datos Paciente">
+        </item>
+    </group>
 
 </menu>

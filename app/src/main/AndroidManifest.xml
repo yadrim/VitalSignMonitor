@@ -18,6 +18,7 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning"
         tools:replace="android:icon">
+        <activity android:name=".PatientDataActivity" />
         <activity android:name=".PatientActitvity" />
         <activity android:name=".PatientListActivity" />
         <activity android:name=".ConnectionActivity" />

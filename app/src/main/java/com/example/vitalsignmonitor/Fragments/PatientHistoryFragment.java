@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.example.vitalsignmonitor.Adapters.PatientAdapter;
 import com.example.vitalsignmonitor.Adapters.PatientDataAdapter;
@@ -51,8 +52,13 @@ public class PatientHistoryFragment extends Fragment
     }
 
     private void refreshPatients() {
-        patients = new PatientDataAdapter(this.getContext(), PatientDataRepository.getPatientDataGroup(this.patient));
-        patientList.setAdapter(patients);
+        try{
+            patients = new PatientDataAdapter(this.getContext(), PatientDataRepository.getPatientDataGroup(this.patient));
+            patientList.setAdapter(patients);
+        }catch (Exception e){
+            Toast toast = Toast.makeText(getContext(), "Problema al mostrar datos de paciente. Error: "+ e.getMessage(), Toast.LENGTH_SHORT);
+            toast.show();
+        }
     }
 
     // TODO: Rename method, update argument and hook method into UI event
