@@ -135,8 +135,9 @@ public class PatientActitvity extends AppCompatActivity
             if(dataRaw.length() == 0)
                 return;
 
-            if(dataRaw.charAt(dataRaw.length() -1) == '|' || dataRaw.charAt(dataRaw.length() -1) == '\0' || dataRaw.charAt(dataRaw.length() -1) == '\n')
-                ProcessMessage();
+            ProcessMessage();
+            //if(dataRaw.charAt(dataRaw.length() -1) == '|' || dataRaw.charAt(dataRaw.length() -1) == '\0' || dataRaw.charAt(dataRaw.length() -1) == '\n')
+
         });
 
         bluetooth.setBluetoothStateListener(state -> {
@@ -151,8 +152,10 @@ public class PatientActitvity extends AppCompatActivity
                 Toast.makeText(getApplicationContext(), "Connection Failed", Toast.LENGTH_LONG).show();
             }
 
+
+
             if(state == BluetoothState.MESSAGE_WRITE){
-                Toast.makeText(getApplicationContext(), "Mensaje enviado", Toast.LENGTH_LONG).show();
+                //Toast.makeText(getApplicationContext(), "Mensaje enviado", Toast.LENGTH_LONG).show();
 
                 if(transferBuffer != null)
                 {
@@ -164,7 +167,7 @@ public class PatientActitvity extends AppCompatActivity
                             public void run() {
                                 performSendData();
                             }
-                        }, 2000);
+                        }, 1000);
                     }
                     else if(progressDialog != null)
                         progressDialog.dismiss();
@@ -296,58 +299,80 @@ public class PatientActitvity extends AppCompatActivity
         try {
             response = new JSONObject(this.dataRaw.toString());
             data = response.getJSONArray("data");
-            groupId = java.util.UUID.randomUUID().toString();
 
             for(int i = 0; i<data.length(); i++){
-                current = data.getJSONObject(i);
-                currentCalendar = convertToCalendar(current.getString("date"), "dd/mm/yyyy");
-                currentTime = convertToTime(current.getString("time"), "hh:mm:ss");
+                try{
+                    groupId = java.util.UUID.randomUUID().toString();
 
-                currentCalendar.set(Calendar.HOUR, currentTime.getHours());
-                currentCalendar.set(Calendar.MINUTE, currentTime.getMinutes());
-                currentCalendar.set(Calendar.SECOND, currentTime.getSeconds());
+                    current = data.getJSONObject(i);
+                    currentCalendar = convertToCalendar(current.getString("date"), "dd/mm/yyyy");
+                    currentTime = convertToTime(current.getString("time"), "hh:mm:ss");
 
-                PatientData patientData;
+                    currentCalendar.set(Calendar.HOUR, currentTime.getHours());
+                    currentCalendar.set(Calendar.MINUTE, currentTime.getMinutes());
+                    currentCalendar.set(Calendar.SECOND, currentTime.getSeconds());
 
-                // Save temperature
-                patientData = new PatientData();
-                patientData.patient = this.patient;
-                patientData.date = currentCalendar;
-                patientData.groupId = groupId;
-                patientData.sensorType = SensorTypeRepository.getSensorType("temp");
-                patientData.dato1 = Float.parseFloat(current.getString("temp"));
-                PatientDataRepository.savePatientData(patientData);
+                    PatientData patientData;
 
-                // Save pressure
-                patientData = new PatientData();
-                patientData.patient = this.patient;
-                patientData.date = currentCalendar;
-                patientData.groupId = groupId;
-                patientData.sensorType = SensorTypeRepository.getSensorType("pressure");
-                patientData.dato1 = Float.parseFloat(current.getString("pressure"));
-                PatientDataRepository.savePatientData(patientData);
+                    // Save temperature
+                    try{
 
-                //Save bpm
-                patientData = new PatientData();
-                patientData.patient = this.patient;
-                patientData.date = currentCalendar;
-                patientData.groupId = groupId;
-                patientData.sensorType = SensorTypeRepository.getSensorType("bpm");
-                patientData.dato1 = Float.parseFloat(current.getString("bpm"));
-                PatientDataRepository.savePatientData(patientData);
+                    }catch (Exception da){
+                        patientData = new PatientData();
+                        patientData.patient = this.patient;
+                        patientData.date = currentCalendar;
+                        patientData.groupId = groupId;
+                        patientData.sensorType = SensorTypeRepository.getSensorType("temp");
+                        patientData.dato1 = Float.parseFloat(current.getString("temp"));
+                        PatientDataRepository.savePatientData(patientData);
+                    }
 
-                //Save
-                patientData = new PatientData();
-                patientData.patient = this.patient;
-                patientData.date = currentCalendar;
-                patientData.groupId = groupId;
-                patientData.sensorType = SensorTypeRepository.getSensorType("spo2");
-                patientData.dato1 = Float.parseFloat(current.getString("spo2"));
-                PatientDataRepository.savePatientData(patientData);
+                    // Save pressure
+                    try{
+                        patientData = new PatientData();
+                        patientData.patient = this.patient;
+                        patientData.date = currentCalendar;
+                        patientData.groupId = groupId;
+                        patientData.sensorType = SensorTypeRepository.getSensorType("pressure");
+                        patientData.dato1 = Float.parseFloat(current.getString("pressure"));
+                        PatientDataRepository.savePatientData(patientData);
+                    }catch (Exception da){
+
+                    }
+
+                    //Save bpm
+                    try{
+                        patientData = new PatientData();
+                        patientData.patient = this.patient;
+                        patientData.date = currentCalendar;
+                        patientData.groupId = groupId;
+                        patientData.sensorType = SensorTypeRepository.getSensorType("bpm");
+                        patientData.dato1 = Float.parseFloat(current.getString("bpm"));
+                        PatientDataRepository.savePatientData(patientData);
+                    }catch (Exception da){
+
+                    }
+
+                    //Save
+                    try{
+                        patientData = new PatientData();
+                        patientData.patient = this.patient;
+                        patientData.date = currentCalendar;
+                        patientData.groupId = groupId;
+                        patientData.sensorType = SensorTypeRepository.getSensorType("spo2");
+                        patientData.dato1 = Float.parseFloat(current.getString("spo2"));
+                        PatientDataRepository.savePatientData(patientData);
+                    }catch (Exception da){
+
+                    }
+                }catch (Exception dataEx){
+                    dataEx.toString();
+                }
             }
 
             success = true;
         } catch(Exception e) {
+            e.toString();
         }
 
         if(success)
@@ -404,10 +429,10 @@ public class PatientActitvity extends AppCompatActivity
                 if(transferBuffer == null || transferBuffer.size() ==0)
                     handler.removeCallbacks(this);
                 else
-                    handler.postDelayed(this, 2000);
+                    handler.postDelayed(this, 500);
 
             }
-        }, 2000);
+        }, 500);
 
         Runnable runnable = new Runnable() {
             @Override
@@ -431,8 +456,6 @@ public class PatientActitvity extends AppCompatActivity
         try{
             data = transferBuffer.poll();
             endTransmission = transferBuffer.size() == 0;
-
-            Toast.makeText(getApplicationContext(), "Enviando datos: " + data, Toast.LENGTH_LONG).show();
             
             bluetooth.send(data, endTransmission);
         } catch (Exception e){

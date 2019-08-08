@@ -1,6 +1,8 @@
 package com.example.vitalsignmonitor.Repositories;
 
 import com.example.vitalsignmonitor.Model.*;
+import com.orm.query.Condition;
+import com.orm.query.Select;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -27,7 +29,11 @@ public class PatientDataRepository {
         List<PatientDataGroup> result = new ArrayList<PatientDataGroup>();
         List<PatientData> data;
 
-        data = PatientData.find(PatientData.class, "patient = ?", patient.getId().toString());
+        //data = PatientData.find(PatientData.class, "patient = ?", patient.getId().toString());
+        data = Select.from(PatientData.class)
+                .where(Condition.prop("patient").eq(patient.getId()))
+                .orderBy("date desc")
+                .list();
 
         for(PatientData current : data){
             PatientDataGroup group = null;

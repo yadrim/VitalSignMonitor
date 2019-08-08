@@ -1,5 +1,7 @@
 package com.example.vitalsignmonitor.Repositories;
 
+import android.hardware.Sensor;
+
 import com.example.vitalsignmonitor.Model.*;
 
 import java.util.ArrayList;
@@ -12,7 +14,7 @@ public class SensorTypeRepository {
         List<SensorType> sensorTypes = new ArrayList<SensorType>();
 
         try{
-            totalSensorType = SensorType.count(Patient.class, null, null);
+            totalSensorType = SensorType.count(SensorType.class, null, null);
             if(totalSensorType == 0){
                 sensorTypes.add(new SensorType("temp", "Temperature",true));
                 sensorTypes.add(new SensorType("pressure", "Presion",true));
